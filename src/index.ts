@@ -6,14 +6,24 @@ import {
   ListToolsRequestSchema,
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
-import { SettleGrid } from '@settlegrid/mcp';
+import { settlegrid, InsufficientCreditsError } from '@settlegrid/mcp';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// 1. Initialize the SettleGrid wrapper using the API Key
-const sg = new SettleGrid({
-  apiKey: process.env.SETTLEGRID_API_KEY || ''
+/**
+ * Initialize SettleGrid.
+ * Note: Based on actual SDK v0.1.1 types, PricingConfig uses defaultCostCents and methods.
+ */
+const sg = settlegrid.init({
+  toolSlug: 'guardrail-pro-mcp',
+  pricing: {
+    defaultCostCents: 50, // $0.50 default per call
+    methods: {
+      'check_legal_compliance': { costCents: 50 },
+      'detect_pii': { costCents: 0 }, // Free tier (simple implementation)
+    },
+  },
 });
 
 class GuardrailProSettleGridServer {
@@ -42,7 +52,6 @@ class GuardrailProSettleGridServer {
   }
 
   private setupHandlers() {
-    // Tool configurations
     const tools = [
       {
         name: 'check_legal_compliance',
@@ -70,65 +79,51 @@ class GuardrailProSettleGridServer {
     ];
 
     // Tool Implementations wrapped by SettleGrid
-    const checkLegalComplianceHandler = sg.wrap({
-      toolName: 'check_legal_compliance',
-      pricing: {
-        model: 'per_call',
-        price: 0.50,
-        currency: 'USD'
-      },
-      handler: async (args: any) => {
-        // Mocked legal compliance analysis logic
+    const checkLegalComplianceHandler = sg.wrap(
+      async (args: any) => {
         return {
           status: 'success',
           framework: args.framework,
           analysis: 'Content satisfies basic compliance constraints.',
           timestamp: new Date().toISOString()
         };
-      }
-    });
-
-    const detectPiiHandler = sg.wrap({
-      toolName: 'detect_pii',
-      pricing: {
-        model: 'tiered',
-        tier: 'Free',
-        limits: {
-          callsPerDay: 5
-        }
       },
-      handler: async (args: any) => {
-        // Mocked PII detection logic
+      { method: 'check_legal_compliance' }
+    );
+
+    const detectPiiHandler = sg.wrap(
+      async (args: any) => {
         return {
           pii_detected: false,
           entities: [],
           message: 'No PII detected.'
         };
-      }
-    });
+      },
+      { method: 'detect_pii' }
+    );
 
-    // Handle List Tools Request
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools
     }));
 
-    // Handle Call Tool Request
-    this.server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const toolName = request.params.name;
       const args = request.params.arguments || {};
+      
+      // Pass MCP _meta as metadata to SettleGrid for API key extraction
+      const context = {
+        metadata: (request.params as any)._meta || {}
+      };
       
       try {
         let result;
         
-        // SettleGrid's wrapper automatically intercepts the request to validate payment/funds.
-        // If the AI agent hasn't authorized payment or lacks funds, it throws or handles 
-        // the '402 Payment Required' before executing the inner logic.
         switch (toolName) {
           case 'check_legal_compliance':
-            result = await checkLegalComplianceHandler(args, request, extra);
+            result = await checkLegalComplianceHandler(args, context);
             break;
           case 'detect_pii':
-            result = await detectPiiHandler(args, request, extra);
+            result = await detectPiiHandler(args, context);
             break;
           default:
             throw new McpError(ErrorCode.MethodNotFound, `Tool not found: ${toolName}`);
@@ -138,20 +133,18 @@ class GuardrailProSettleGridServer {
           content: [
             {
               type: 'text',
-              text: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
+              text: JSON.stringify(result, null, 2),
             },
           ],
         };
       } catch (error: any) {
-        // Map SettleGrid 402/Quota errors to standard MCP errors
-        if (error.status === 402 || error.code === 'insufficient_funds' || error.message?.includes('Payment Required')) {
+        // Handle SettleGrid specific errors
+        if (error instanceof InsufficientCreditsError || error.status === 402 || error.message?.includes('Payment Required')) {
           return {
-            content: [{ type: 'text', text: `Payment Required: ${error.message}` }],
-            isError: true
-          };
-        } else if (error.code === 'quota_exceeded' || error.message?.includes('limit')) {
-          return {
-            content: [{ type: 'text', text: `Usage Limit Exceeded: ${error.message}` }],
+            content: [{ 
+              type: 'text', 
+              text: `Payment Required: ${error.message}. Please authorize payment or top up at settlegrid.ai` 
+            }],
             isError: true
           };
         }
