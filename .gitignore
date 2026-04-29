@@ -1,5 +1,5 @@
 node_modules/
-dist/
+# dist/ (Removed to ensure deployment success)
 .env
 .env.*
 !.env.example
