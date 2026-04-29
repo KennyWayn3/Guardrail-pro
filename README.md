@@ -1,65 +1,36 @@
-# Legal-Compliance-MCP Monetized Server
+# Legal-Compliance-MCP
 
 [![SettleGrid](https://settlegrid.ai/api/badge/tool/legal-compliance-mcp)](https://settlegrid.ai/tools/legal-compliance-mcp)
 [![Powered by SettleGrid](https://settlegrid.ai/api/badge/powered-by)](https://settlegrid.ai)
 
-This MCP server provides legal compliance and PII detection tools. It is integrated with [SettleGrid](https://settlegrid.com) to automatically monetize tool usage and published on [Smithery](https://smithery.ai/servers/yourbuttstinks69420/guardrail-pro-mcp).
+Legal-Compliance-MCP is a specialized Model Context Protocol (MCP) server providing deep semantic analysis for legal compliance and PII (Personally Identifiable Information) detection. It is designed to act as a safety "guardrail" for AI agent outputs.
 
-## Pricing Structure
+## 🛠 Available Tools
 
-- `check_legal_compliance`: **5 cents per call**
-- `detect_pii`: **Free Tier** (Up to 5 calls per day)
+### 1. `check_legal_compliance`
+Performs an AI-powered semantic audit of text against specific legal frameworks.
+- **Frameworks Supported**: `GDPR`, `HIPAA`.
+- **Input**: `content` (string), `framework` (enum: GDPR, HIPAA).
+- **Output**: Detailed audit report including Compliance Status (PASS/FAIL/WARNING), specific findings, and recommended actions.
+- **Pricing**: **5 cents per call** (via SettleGrid).
 
-## Setup
+### 2. `detect_pii`
+Intelligently identifies and redacts Personal Identifiable Information (PII) from text.
+- **Input**: `content` (string).
+- **Output**: Scrubbed text with PII replaced by `[REDACTED]` and a list of entity types removed.
+- **Pricing**: **Free Tier** available.
 
-1. **Install Dependencies**
-   ```bash
-   npm install
-   ```
+## 💰 Monetization & Access
+This server is integrated with the [SettleGrid](https://settlegrid.com) network for automated per-call billing.
 
-2. **Environment Variables**
-   Create a `.env` file in the root of the project with the following:
-   ```env
-   # SettleGrid API Key for authenticating the MCP server
-   SETTLEGRID_API_KEY=your_settlegrid_api_key_here
-   ```
+### Handling "Payment Required"
+If a request fails with an "Insufficient Credits" or "Payment Required" message, the agent should inform the user and provide the following link to authorize payment:
+- **Payment Portal**: [https://settlegrid.ai](https://settlegrid.ai)
 
-3. **Build the Project**
-   ```bash
-   npm run build
-   ```
+## ⚖️ Compliance Standards
+The server uses **Gemini 1.5 Flash** to analyze text against the most up-to-date regulatory standards for:
+- **GDPR**: General Data Protection Regulation.
+- **HIPAA**: Health Insurance Portability and Accountability Act.
 
-## SettleGrid Discovery API Registration
-
-To expose your tools to the SettleGrid network so agents can discover and pay for them, you must register your server using the SettleGrid Discovery API.
-
-Send a POST request to SettleGrid's registration endpoint containing your server details and pricing:
-
-```bash
-curl -X POST https://api.settlegrid.com/v1/mcp/register \
-  -H "Authorization: Bearer $SETTLEGRID_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "server_name": "legal-compliance-mcp",
-    "description": "Legal Compliance and PII Detection AI tools",
-    "tools": [
-      {
-        "name": "check_legal_compliance",
-        "pricing_model": "per_call",
-        "price": 0.05,
-        "currency": "USD"
-      },
-      {
-        "name": "detect_pii",
-        "pricing_model": "tiered",
-        "tier": "Free",
-        "limits": {
-          "callsPerDay": 5
-        }
-      }
-    ],
-    "endpoint": "https://guardrail-pro.onrender.com/sse"
-  }'
-```
-
-Once registered, agents connected to the SettleGrid marketplace can discover and securely call your tools, while you automatically collect payments for the `check_legal_compliance` endpoint.
+---
+*Published on [Smithery](https://smithery.ai/servers/yourbuttstinks69420/guardrail-pro-mcp)*
