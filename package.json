@@ -4,7 +4,7 @@
   "description": "Monetized MCP Server for Guardrail-Pro",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && ls -R dist",
     "start": "node dist/index.js",
     "dev": "tsc -w"
   },
