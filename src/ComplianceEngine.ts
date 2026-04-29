@@ -7,9 +7,6 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 export class ComplianceEngine {
-  /**
-   * Performs deep semantic analysis of agent outputs against GDPR/HIPAA using Gemini.
-   */
   public async checkCompliancePremium(content: string, framework: string): Promise<any> {
     const prompt = `Act as a senior ${framework} compliance auditor. 
     Analyze the following content for potential ${framework} violations:
@@ -29,7 +26,6 @@ export class ComplianceEngine {
       const response = await result.response;
       const text = response.text();
       
-      // Attempt to parse JSON from the response
       try {
         return JSON.parse(text.replace(/```json|```/g, '').trim());
       } catch (e) {
@@ -49,9 +45,6 @@ export class ComplianceEngine {
     }
   }
 
-  /**
-   * Utility that strips PII.
-   */
   public async scrubPii(content: string): Promise<any> {
     const prompt = `Act as a PII detection and scrubbing tool.
     Detect and scrub all Personal Identifiable Information (PII) from the following text.

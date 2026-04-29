@@ -14,13 +14,10 @@ import { ComplianceEngine } from './ComplianceEngine.js';
 
 dotenv.config();
 
-/**
- * Initialize SettleGrid.
- */
 const sg = settlegrid.init({
   toolSlug: 'legal-compliance-mcp',
   pricing: {
-    defaultCostCents: 5, // 5 cents per call
+    defaultCostCents: 5,
     methods: {
       'check_legal_compliance': { costCents: 5 },
       'detect_pii': { costCents: 0 },

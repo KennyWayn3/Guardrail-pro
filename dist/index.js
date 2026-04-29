@@ -12,13 +12,10 @@ const path_1 = __importDefault(require("path"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const ComplianceEngine_js_1 = require("./ComplianceEngine.js");
 dotenv_1.default.config();
-/**
- * Initialize SettleGrid.
- */
 const sg = mcp_1.settlegrid.init({
     toolSlug: 'legal-compliance-mcp',
     pricing: {
-        defaultCostCents: 5, // 5 cents per call
+        defaultCostCents: 5,
         methods: {
             'check_legal_compliance': { costCents: 5 },
             'detect_pii': { costCents: 0 },
