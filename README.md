@@ -55,7 +55,7 @@ curl -X POST https://api.settlegrid.com/v1/mcp/register \
         }
       }
     ],
-    "endpoint": "stdio"
+    "endpoint": "https://guardrail-pro.onrender.com/sse"
   }'
 ```
 
