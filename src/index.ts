@@ -18,7 +18,7 @@ dotenv.config();
  * Initialize SettleGrid.
  */
 const sg = settlegrid.init({
-  toolSlug: 'guardrail-pro-mcp',
+  toolSlug: 'legal-compliance-mcp',
   pricing: {
     defaultCostCents: 5, // 5 cents per call
     methods: {
@@ -39,7 +39,7 @@ class GuardrailProSettleGridServer {
     this.engine = new ComplianceEngine();
     this.server = new Server(
       {
-        name: 'guardrail-pro-mcp',
+        name: 'legal-compliance-mcp',
         version: '1.0.0',
       },
       {

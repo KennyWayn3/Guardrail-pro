@@ -1,4 +1,7 @@
-# Guardrail-Pro SettleGrid Monetized MCP Server
+# Legal-Compliance-MCP Monetized Server
+
+[![Powered by SettleGrid](https://img.shields.io/badge/Powered%20by-SettleGrid-blue)](https://settlegrid.ai/dev/agent-med)
+[![SettleGrid Tool](https://settlegrid.ai/api/badge/tool/legal-compliance-mcp)](https://settlegrid.ai/tools/legal-compliance-mcp)
 
 This MCP server provides legal compliance and PII detection tools. It is integrated with [SettleGrid](https://settlegrid.com) to automatically monetize tool usage and published on [Smithery](https://smithery.ai/servers/yourbuttstinks69420/guardrail-pro-mcp).
 
@@ -37,7 +40,7 @@ curl -X POST https://api.settlegrid.com/v1/mcp/register \
   -H "Authorization: Bearer $SETTLEGRID_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "server_name": "guardrail-pro-mcp",
+    "server_name": "legal-compliance-mcp",
     "description": "Legal Compliance and PII Detection AI tools",
     "tools": [
       {
