@@ -18,10 +18,10 @@ dotenv.config();
 const sg = settlegrid.init({
   toolSlug: 'guardrail-pro-mcp',
   pricing: {
-    defaultCostCents: 50, // $0.50 default per call
+    defaultCostCents: 5, // 5 cents per call
     methods: {
-      'check_legal_compliance': { costCents: 50 },
-      'detect_pii': { costCents: 0 }, // Free tier (simple implementation)
+      'check_legal_compliance': { costCents: 5 },
+      'detect_pii': { costCents: 0 }, // Keeping this free as requested previously or should it be 5?
     },
   },
 });

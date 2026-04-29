@@ -4,7 +4,7 @@ This MCP server provides legal compliance and PII detection tools. It is integra
 
 ## Pricing Structure
 
-- `check_legal_compliance`: **$0.50 per call**
+- `check_legal_compliance`: **5 cents per call**
 - `detect_pii`: **Free Tier** (Up to 5 calls per day)
 
 ## Setup
@@ -43,7 +43,7 @@ curl -X POST https://api.settlegrid.com/v1/mcp/register \
       {
         "name": "check_legal_compliance",
         "pricing_model": "per_call",
-        "price": 0.50,
+        "price": 0.05,
         "currency": "USD"
       },
       {
