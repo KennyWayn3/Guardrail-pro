@@ -140,6 +140,9 @@ class GuardrailProSettleGridServer {
         this.app.get('/.well-known/mcp/server-card.json', (req, res) => {
             res.sendFile(path_1.default.resolve(__dirname, '../server-card.json'));
         });
+        this.app.get('/.well-known/smithery-verification', (req, res) => {
+            res.send('smithery-verification=2788e1e225f8d0b652ae5f0c2eefa090879a0201e93aa008b863a6ad284c9d02');
+        });
     }
     run() {
         const port = process.env.PORT || 3000;
