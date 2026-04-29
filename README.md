@@ -1,6 +1,6 @@
 # Guardrail-Pro SettleGrid Monetized MCP Server
 
-This MCP server provides legal compliance and PII detection tools. It is integrated with [SettleGrid](https://settlegrid.com) to automatically monetize tool usage.
+This MCP server provides legal compliance and PII detection tools. It is integrated with [SettleGrid](https://settlegrid.com) to automatically monetize tool usage and published on [Smithery](https://smithery.ai/servers/yourbuttstinks69420/guardrail-pro-mcp).
 
 ## Pricing Structure
 
