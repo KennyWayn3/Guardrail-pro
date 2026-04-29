@@ -1,0 +1,51 @@
+{
+  "serverInfo": {
+    "name": "guardrail-pro-mcp",
+    "version": "1.0.0"
+  },
+  "tools": [
+    {
+      "name": "check_legal_compliance",
+      "description": "Performs deep semantic analysis of text for GDPR/HIPAA compliance. Pricing: 5 cents per call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "Content to analyze"
+          },
+          "framework": {
+            "type": "string",
+            "enum": [
+              "GDPR",
+              "HIPAA"
+            ],
+            "description": "The compliance framework to check against"
+          }
+        },
+        "required": [
+          "content",
+          "framework"
+        ]
+      }
+    },
+    {
+      "name": "detect_pii",
+      "description": "Detects PII in text. Free tier: 5 calls per day.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "Content to analyze for PII"
+          }
+        },
+        "required": [
+          "content"
+        ]
+      }
+    }
+  ],
+  "resources": [],
+  "prompts": []
+}

@@ -8,6 +8,7 @@ const sse_js_1 = require("@modelcontextprotocol/sdk/server/sse.js");
 const types_js_1 = require("@modelcontextprotocol/sdk/types.js");
 const mcp_1 = require("@settlegrid/mcp");
 const express_1 = __importDefault(require("express"));
+const path_1 = __importDefault(require("path"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 /**
@@ -135,6 +136,9 @@ class GuardrailProSettleGridServer {
         });
         this.app.get('/health', (req, res) => {
             res.status(200).send('OK');
+        });
+        this.app.get('/.well-known/mcp/server-card.json', (req, res) => {
+            res.sendFile(path_1.default.resolve(__dirname, '../server-card.json'));
         });
     }
     run() {

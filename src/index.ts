@@ -8,6 +8,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { settlegrid, InsufficientCreditsError } from '@settlegrid/mcp';
 import express from 'express';
+import path from 'path';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -159,6 +160,10 @@ class GuardrailProSettleGridServer {
 
     this.app.get('/health', (req, res) => {
       res.status(200).send('OK');
+    });
+
+    this.app.get('/.well-known/mcp/server-card.json', (req, res) => {
+      res.sendFile(path.resolve(__dirname, '../server-card.json'));
     });
   }
 
