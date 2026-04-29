@@ -2,6 +2,14 @@
   "name": "guardrail-pro-mcp",
   "version": "1.0.0",
   "description": "Monetized MCP Server for Guardrail-Pro",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KennyWayn3/Guardrail-pro.git"
+  },
+  "files": [
+    "dist"
+  ],
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
