@@ -153,6 +153,10 @@ class GuardrailProSettleGridServer {
       await this.transport.handlePostMessage(req, res);
     });
 
+    this.app.get('/', (req, res) => {
+      res.send('Guardrail-Pro MCP Server is running! Use /sse for MCP connections.');
+    });
+
     this.app.get('/health', (req, res) => {
       res.status(200).send('OK');
     });
