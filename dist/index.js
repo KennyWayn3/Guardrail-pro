@@ -10,6 +10,7 @@ const mcp_1 = require("@settlegrid/mcp");
 const express_1 = __importDefault(require("express"));
 const path_1 = __importDefault(require("path"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const ComplianceEngine_js_1 = require("./ComplianceEngine.js");
 dotenv_1.default.config();
 /**
  * Initialize SettleGrid.
@@ -28,8 +29,10 @@ class GuardrailProSettleGridServer {
     server;
     app;
     transport;
+    engine;
     constructor() {
         this.app = (0, express_1.default)();
+        this.engine = new ComplianceEngine_js_1.ComplianceEngine();
         this.server = new index_js_1.Server({
             name: 'guardrail-pro-mcp',
             version: '1.0.0',
@@ -68,19 +71,10 @@ class GuardrailProSettleGridServer {
             }
         ];
         const checkLegalComplianceHandler = sg.wrap(async (args) => {
-            return {
-                status: 'success',
-                framework: args.framework,
-                analysis: 'Content satisfies basic compliance constraints.',
-                timestamp: new Date().toISOString()
-            };
+            return await this.engine.checkCompliancePremium(args.content, args.framework);
         }, { method: 'check_legal_compliance' });
         const detectPiiHandler = sg.wrap(async (args) => {
-            return {
-                pii_detected: false,
-                entities: [],
-                message: 'No PII detected.'
-            };
+            return await this.engine.scrubPii(args.content);
         }, { method: 'detect_pii' });
         this.server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => ({
             tools

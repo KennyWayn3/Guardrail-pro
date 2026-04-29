@@ -10,6 +10,7 @@ import { settlegrid, InsufficientCreditsError } from '@settlegrid/mcp';
 import express from 'express';
 import path from 'path';
 import dotenv from 'dotenv';
+import { ComplianceEngine } from './ComplianceEngine.js';
 
 dotenv.config();
 
@@ -31,9 +32,11 @@ class GuardrailProSettleGridServer {
   private server: Server;
   private app: express.Application;
   private transport?: SSEServerTransport;
+  private engine: ComplianceEngine;
 
   constructor() {
     this.app = express();
+    this.engine = new ComplianceEngine();
     this.server = new Server(
       {
         name: 'guardrail-pro-mcp',
@@ -79,23 +82,14 @@ class GuardrailProSettleGridServer {
 
     const checkLegalComplianceHandler = sg.wrap(
       async (args: any) => {
-        return {
-          status: 'success',
-          framework: args.framework,
-          analysis: 'Content satisfies basic compliance constraints.',
-          timestamp: new Date().toISOString()
-        };
+        return await this.engine.checkCompliancePremium(args.content, args.framework);
       },
       { method: 'check_legal_compliance' }
     );
 
     const detectPiiHandler = sg.wrap(
       async (args: any) => {
-        return {
-          pii_detected: false,
-          entities: [],
-          message: 'No PII detected.'
-        };
+        return await this.engine.scrubPii(args.content);
       },
       { method: 'detect_pii' }
     );

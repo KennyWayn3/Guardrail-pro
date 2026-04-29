@@ -17,6 +17,7 @@
     "dev": "tsc -w"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@settlegrid/mcp": "^0.1.1",
     "@types/express": "^4.17.21",
