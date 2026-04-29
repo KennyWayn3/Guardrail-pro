@@ -1,5 +1,5 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import {
   CallToolRequestSchema,
   ErrorCode,
@@ -7,13 +7,13 @@ import {
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
 import { settlegrid, InsufficientCreditsError } from '@settlegrid/mcp';
+import express from 'express';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 /**
  * Initialize SettleGrid.
- * Note: Based on actual SDK v0.1.1 types, PricingConfig uses defaultCostCents and methods.
  */
 const sg = settlegrid.init({
   toolSlug: 'guardrail-pro-mcp',
@@ -21,15 +21,18 @@ const sg = settlegrid.init({
     defaultCostCents: 5, // 5 cents per call
     methods: {
       'check_legal_compliance': { costCents: 5 },
-      'detect_pii': { costCents: 0 }, // Keeping this free as requested previously or should it be 5?
+      'detect_pii': { costCents: 0 },
     },
   },
 });
 
 class GuardrailProSettleGridServer {
   private server: Server;
+  private app: express.Application;
+  private transport?: SSEServerTransport;
 
   constructor() {
+    this.app = express();
     this.server = new Server(
       {
         name: 'guardrail-pro-mcp',
@@ -43,19 +46,14 @@ class GuardrailProSettleGridServer {
     );
 
     this.setupHandlers();
-    
-    this.server.onerror = (error) => console.error('[MCP Error]', error);
-    process.on('SIGINT', async () => {
-      await this.server.close();
-      process.exit(0);
-    });
+    this.setupExpress();
   }
 
   private setupHandlers() {
     const tools = [
       {
         name: 'check_legal_compliance',
-        description: 'Performs deep semantic analysis of text for GDPR/HIPAA compliance. Pricing: $0.50 per call.',
+        description: 'Performs deep semantic analysis of text for GDPR/HIPAA compliance. Pricing: 5 cents per call.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -78,7 +76,6 @@ class GuardrailProSettleGridServer {
       }
     ];
 
-    // Tool Implementations wrapped by SettleGrid
     const checkLegalComplianceHandler = sg.wrap(
       async (args: any) => {
         return {
@@ -109,15 +106,12 @@ class GuardrailProSettleGridServer {
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const toolName = request.params.name;
       const args = request.params.arguments || {};
-      
-      // Pass MCP _meta as metadata to SettleGrid for API key extraction
       const context = {
         metadata: (request.params as any)._meta || {}
       };
       
       try {
         let result;
-        
         switch (toolName) {
           case 'check_legal_compliance':
             result = await checkLegalComplianceHandler(args, context);
@@ -130,36 +124,49 @@ class GuardrailProSettleGridServer {
         }
 
         return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            },
-          ],
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
       } catch (error: any) {
-        // Handle SettleGrid specific errors
         if (error instanceof InsufficientCreditsError || error.status === 402 || error.message?.includes('Payment Required')) {
           return {
-            content: [{ 
-              type: 'text', 
-              text: `Payment Required: ${error.message}. Please authorize payment or top up at settlegrid.ai` 
-            }],
+            content: [{ type: 'text', text: `Payment Required: ${error.message}. Please authorize payment at settlegrid.ai` }],
             isError: true
           };
         }
-        
         throw new McpError(ErrorCode.InternalError, `Execution failed: ${error.message}`);
       }
     });
   }
 
-  async run() {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    console.error('Guardrail-Pro MCP server (Monetized via SettleGrid) running on stdio');
+  private setupExpress() {
+    this.app.get('/sse', async (req, res) => {
+      this.transport = new SSEServerTransport('/messages', res);
+      await this.server.connect(this.transport);
+      console.log('New SSE connection established');
+    });
+
+    this.app.post('/messages', async (req, res) => {
+      if (!this.transport) {
+        res.status(400).send('No active SSE connection');
+        return;
+      }
+      await this.transport.handlePostMessage(req, res);
+    });
+
+    this.app.get('/health', (req, res) => {
+      res.status(200).send('OK');
+    });
+  }
+
+  public run() {
+    const port = process.env.PORT || 3000;
+    this.app.listen(port, () => {
+      console.log(`Guardrail-Pro MCP server (SSE) listening on port ${port}`);
+      console.log(`SSE endpoint: http://localhost:${port}/sse`);
+      console.log(`Messages endpoint: http://localhost:${port}/messages`);
+    });
   }
 }
 
 const server = new GuardrailProSettleGridServer();
-server.run().catch(console.error);
+server.run();

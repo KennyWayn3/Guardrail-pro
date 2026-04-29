@@ -4,14 +4,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const index_js_1 = require("@modelcontextprotocol/sdk/server/index.js");
-const stdio_js_1 = require("@modelcontextprotocol/sdk/server/stdio.js");
+const sse_js_1 = require("@modelcontextprotocol/sdk/server/sse.js");
 const types_js_1 = require("@modelcontextprotocol/sdk/types.js");
 const mcp_1 = require("@settlegrid/mcp");
+const express_1 = __importDefault(require("express"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 /**
  * Initialize SettleGrid.
- * Note: Based on actual SDK v0.1.1 types, PricingConfig uses defaultCostCents and methods.
  */
 const sg = mcp_1.settlegrid.init({
     toolSlug: 'guardrail-pro-mcp',
@@ -19,13 +19,16 @@ const sg = mcp_1.settlegrid.init({
         defaultCostCents: 5, // 5 cents per call
         methods: {
             'check_legal_compliance': { costCents: 5 },
-            'detect_pii': { costCents: 0 }, // Keeping this free as requested previously or should it be 5?
+            'detect_pii': { costCents: 0 },
         },
     },
 });
 class GuardrailProSettleGridServer {
     server;
+    app;
+    transport;
     constructor() {
+        this.app = (0, express_1.default)();
         this.server = new index_js_1.Server({
             name: 'guardrail-pro-mcp',
             version: '1.0.0',
@@ -35,17 +38,13 @@ class GuardrailProSettleGridServer {
             },
         });
         this.setupHandlers();
-        this.server.onerror = (error) => console.error('[MCP Error]', error);
-        process.on('SIGINT', async () => {
-            await this.server.close();
-            process.exit(0);
-        });
+        this.setupExpress();
     }
     setupHandlers() {
         const tools = [
             {
                 name: 'check_legal_compliance',
-                description: 'Performs deep semantic analysis of text for GDPR/HIPAA compliance. Pricing: $0.50 per call.',
+                description: 'Performs deep semantic analysis of text for GDPR/HIPAA compliance. Pricing: 5 cents per call.',
                 inputSchema: {
                     type: 'object',
                     properties: {
@@ -67,7 +66,6 @@ class GuardrailProSettleGridServer {
                 }
             }
         ];
-        // Tool Implementations wrapped by SettleGrid
         const checkLegalComplianceHandler = sg.wrap(async (args) => {
             return {
                 status: 'success',
@@ -89,7 +87,6 @@ class GuardrailProSettleGridServer {
         this.server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
             const toolName = request.params.name;
             const args = request.params.arguments || {};
-            // Pass MCP _meta as metadata to SettleGrid for API key extraction
             const context = {
                 metadata: request.params._meta || {}
             };
@@ -106,22 +103,13 @@ class GuardrailProSettleGridServer {
                         throw new types_js_1.McpError(types_js_1.ErrorCode.MethodNotFound, `Tool not found: ${toolName}`);
                 }
                 return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: JSON.stringify(result, null, 2),
-                        },
-                    ],
+                    content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
                 };
             }
             catch (error) {
-                // Handle SettleGrid specific errors
                 if (error instanceof mcp_1.InsufficientCreditsError || error.status === 402 || error.message?.includes('Payment Required')) {
                     return {
-                        content: [{
-                                type: 'text',
-                                text: `Payment Required: ${error.message}. Please authorize payment or top up at settlegrid.ai`
-                            }],
+                        content: [{ type: 'text', text: `Payment Required: ${error.message}. Please authorize payment at settlegrid.ai` }],
                         isError: true
                     };
                 }
@@ -129,11 +117,31 @@ class GuardrailProSettleGridServer {
             }
         });
     }
-    async run() {
-        const transport = new stdio_js_1.StdioServerTransport();
-        await this.server.connect(transport);
-        console.error('Guardrail-Pro MCP server (Monetized via SettleGrid) running on stdio');
+    setupExpress() {
+        this.app.get('/sse', async (req, res) => {
+            this.transport = new sse_js_1.SSEServerTransport('/messages', res);
+            await this.server.connect(this.transport);
+            console.log('New SSE connection established');
+        });
+        this.app.post('/messages', async (req, res) => {
+            if (!this.transport) {
+                res.status(400).send('No active SSE connection');
+                return;
+            }
+            await this.transport.handlePostMessage(req, res);
+        });
+        this.app.get('/health', (req, res) => {
+            res.status(200).send('OK');
+        });
+    }
+    run() {
+        const port = process.env.PORT || 3000;
+        this.app.listen(port, () => {
+            console.log(`Guardrail-Pro MCP server (SSE) listening on port ${port}`);
+            console.log(`SSE endpoint: http://localhost:${port}/sse`);
+            console.log(`Messages endpoint: http://localhost:${port}/messages`);
+        });
     }
 }
 const server = new GuardrailProSettleGridServer();
-server.run().catch(console.error);
+server.run();
