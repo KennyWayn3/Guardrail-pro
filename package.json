@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "@settlegrid/mcp": "^1.0.0",
+    "@settlegrid/mcp": "^0.1.1",
     "dotenv": "^16.4.5"
   },
   "devDependencies": {
